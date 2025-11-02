@@ -1,0 +1,12 @@
+D:\Backend_WebKara\WebKaraoke.DTO\bin\Debug\net8.0\WebKaraoke.DTO.deps.json
+D:\Backend_WebKara\WebKaraoke.DTO\bin\Debug\net8.0\WebKaraoke.DTO.dll
+D:\Backend_WebKara\WebKaraoke.DTO\bin\Debug\net8.0\WebKaraoke.DTO.pdb
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.GeneratedMSBuildEditorConfig.editorconfig
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.AssemblyInfoInputs.cache
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.AssemblyInfo.cs
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.csproj.CoreCompileInputs.cache
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.sourcelink.json
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.dll
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\refint\WebKaraoke.DTO.dll
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\WebKaraoke.DTO.pdb
+D:\Backend_WebKara\WebKaraoke.DTO\obj\Debug\net8.0\ref\WebKaraoke.DTO.dll
