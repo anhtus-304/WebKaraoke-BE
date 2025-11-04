@@ -1,133 +1,146 @@
-using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 using WebKaraoke.Data;
 using WebKaraoke.Data.Entities;
-using WebKaraoke.DTO;
 using WebKaraoke.Business.Interfaces;
-
+using WebKaraoke.DTO;
+using Microsoft.Extensions.Logging;
 namespace WebKaraoke.Business.Services
 {
     public class DatPhongService : IDatPhongService
     {
-        private readonly WebKaraokeDbContext _context;
+        private readonly IRepository<DatPhong> _datPhongRepository;
+        private readonly IRepository<Phong> _phongRepository;
+        private readonly IMapper _mapper;
+        private readonly ILogger<DatPhongService> _logger;
 
-        public DatPhongService(WebKaraokeDbContext context)
+        public DatPhongService(
+            IRepository<DatPhong> datPhongRepository,
+            IRepository<Phong> phongRepository,
+            IMapper mapper,
+            ILogger<DatPhongService> logger)
         {
-            _context = context;
+            _datPhongRepository = datPhongRepository;
+            _phongRepository = phongRepository;
+            _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<DatPhongDTO>> GetDatPhongByKhachHangAsync(int khachHangId)
         {
-            var datPhongs = await _context.DatPhongs
-                .Include(dp => dp.Phong)
-                    .ThenInclude(p => p.LoaiPhong)
-                .Include(dp => dp.KhachHang)
-                .Where(dp => dp.KhachHangID == khachHangId)
-                .OrderByDescending(dp => dp.NgayDat)
-                .ToListAsync();
-
-            return datPhongs.Select(dp => new DatPhongDTO
+            try
             {
-                DatPhongID = dp.DatPhongID,
-                TenPhong = dp.Phong.TenPhong,
-                TenKhachHang = dp.KhachHang.HoTen,
-                LoaiPhong = dp.Phong.LoaiPhong.TenLoai,
-                GiaGio = dp.Phong.GiaGio,
-                NgayDat = dp.NgayDat,
-                GioBatDau = dp.GioBatDau,
-                GioKetThuc = dp.GioKetThuc,
-                TrangThai = dp.TrangThai
-            });
+                var datPhongs = (await _datPhongRepository.GetAllAsync())
+                    .Where(dp => dp.KhachHangID == khachHangId)
+                    .OrderByDescending(dp => dp.ThoiGianDat);
+
+                return _mapper.Map<IEnumerable<DatPhongDTO>>(datPhongs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bookings for customer: {CustomerId}", khachHangId);
+                throw;
+            }
         }
 
         public async Task<DatPhongDTO?> GetDatPhongByIdAsync(int id)
         {
-            var datPhong = await _context.DatPhongs
-                .Include(dp => dp.Phong)
-                    .ThenInclude(p => p.LoaiPhong)
-                .Include(dp => dp.KhachHang)
-                .FirstOrDefaultAsync(dp => dp.DatPhongID == id);
-
-            if (datPhong == null) return null;
-
-            return new DatPhongDTO
+            try
             {
-                DatPhongID = datPhong.DatPhongID,
-                TenPhong = datPhong.Phong.TenPhong,
-                TenKhachHang = datPhong.KhachHang.HoTen,
-                LoaiPhong = datPhong.Phong.LoaiPhong.TenLoai,
-                GiaGio = datPhong.Phong.GiaGio,
-                NgayDat = datPhong.NgayDat,
-                GioBatDau = datPhong.GioBatDau,
-                GioKetThuc = datPhong.GioKetThuc,
-                TrangThai = datPhong.TrangThai
-            };
+                var datPhong = await _datPhongRepository.GetByIdAsync(id);
+                return _mapper.Map<DatPhongDTO?>(datPhong);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting booking by ID: {BookingId}", id);
+                throw;
+            }
         }
 
         public async Task<bool> HuyDatPhongAsync(int datPhongId, int khachHangId)
         {
             try
             {
-                var datPhong = await _context.DatPhongs
-                    .Include(dp => dp.Phong)
-                    .FirstOrDefaultAsync(dp => dp.DatPhongID == datPhongId && dp.KhachHangID == khachHangId);
+                var datPhong = await _datPhongRepository.GetByIdAsync(datPhongId);
+                if (datPhong == null || datPhong.KhachHangID != khachHangId)
+                {
+                    _logger.LogWarning("Booking {BookingId} not found or doesn't belong to customer {CustomerId}", 
+                        datPhongId, khachHangId);
+                    return false;
+                }
 
-                if (datPhong == null) return false;
+                if (datPhong.TrangThai != "ChoXacNhan")
+                {
+                    _logger.LogWarning("Cannot cancel booking {BookingId} with status: {Status}", 
+                        datPhongId, datPhong.TrangThai);
+                    return false;
+                }
 
                 datPhong.TrangThai = "DaHuy";
-                datPhong.Phong.TrangThai = "Trong";
+                _datPhongRepository.Update(datPhong);
 
-                return await _context.SaveChangesAsync() > 0;
+                // Update room status back to available
+                var phong = await _phongRepository.GetByIdAsync(datPhong.PhongID);
+                if (phong != null)
+                {
+                    phong.TrangThai = "Trong";
+                    _phongRepository.Update(phong);
+                }
+
+                await _datPhongRepository.SaveAsync();
+
+                _logger.LogInformation("Booking {BookingId} cancelled successfully by customer {CustomerId}", 
+                    datPhongId, khachHangId);
+                
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Lỗi khi hủy đặt phòng: {ex.Message}");
-                return false;
+                _logger.LogError(ex, "Error cancelling booking {BookingId} by customer {CustomerId}", 
+                    datPhongId, khachHangId);
+                throw;
             }
         }
 
         public async Task<IEnumerable<DatPhongDTO>> GetDatPhongChoXacNhanAsync()
         {
-            var datPhongs = await _context.DatPhongs
-                .Include(dp => dp.Phong)
-                    .ThenInclude(p => p.LoaiPhong)
-                .Include(dp => dp.KhachHang)
-                .Where(dp => dp.TrangThai == "ChoXacNhan")
-                .OrderBy(dp => dp.NgayDat)
-                .ToListAsync();
-
-            return datPhongs.Select(dp => new DatPhongDTO
+            try
             {
-                DatPhongID = dp.DatPhongID,
-                TenPhong = dp.Phong.TenPhong,
-                TenKhachHang = dp.KhachHang.HoTen,
-                LoaiPhong = dp.Phong.LoaiPhong.TenLoai,
-                GiaGio = dp.Phong.GiaGio,
-                NgayDat = dp.NgayDat,
-                GioBatDau = dp.GioBatDau,
-                GioKetThuc = dp.GioKetThuc,
-                TrangThai = dp.TrangThai
-            });
+                var datPhongs = (await _datPhongRepository.GetAllAsync())
+                    .Where(dp => dp.TrangThai == "ChoXacNhan")
+                    .OrderBy(dp => dp.ThoiGianDat);
+
+                return _mapper.Map<IEnumerable<DatPhongDTO>>(datPhongs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pending confirmation bookings");
+                throw;
+            }
         }
 
         public async Task<bool> XacNhanDatPhongAsync(int datPhongId, int nhanVienId)
         {
             try
             {
-                var datPhong = await _context.DatPhongs
-                    .Include(dp => dp.Phong)
-                    .FirstOrDefaultAsync(dp => dp.DatPhongID == datPhongId);
-
-                if (datPhong == null) return false;
+                var datPhong = await _datPhongRepository.GetByIdAsync(datPhongId);
+                if (datPhong == null || datPhong.TrangThai != "ChoXacNhan")
+                {
+                    _logger.LogWarning("Booking {BookingId} not found or not pending confirmation", datPhongId);
+                    return false;
+                }
 
                 datPhong.TrangThai = "DaXacNhan";
-                datPhong.Phong.TrangThai = "DangSuDung";
+                _datPhongRepository.Update(datPhong);
+                await _datPhongRepository.SaveAsync();
 
-                return await _context.SaveChangesAsync() > 0;
+                _logger.LogInformation("Booking {BookingId} confirmed by staff {StaffId}", datPhongId, nhanVienId);
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Lỗi khi xác nhận đặt phòng: {ex.Message}");
-                return false;
+                _logger.LogError(ex, "Error confirming booking {BookingId} by staff {StaffId}", 
+                    datPhongId, nhanVienId);
+                throw;
             }
         }
     }

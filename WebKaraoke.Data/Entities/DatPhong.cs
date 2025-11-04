@@ -1,5 +1,3 @@
-// WebKaraoke.Data/Entities/DatPhong.cs
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebKaraoke.Data.Entities
@@ -7,27 +5,18 @@ namespace WebKaraoke.Data.Entities
     [Table("DatPhong")]
     public class DatPhong
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int DatPhongID { get; set; }
-
-        public int PhongID { get; set; }
         public int KhachHangID { get; set; }
-
-        // KIỂM TRA PROPERTY NÀY TỒN TẠI
-        public DateTime NgayDat { get; set; } // Hoặc property khác
-
+        public int PhongID { get; set; }
+        public DateTime ThoiGianDat { get; set; }
         public DateTime GioBatDau { get; set; }
         public DateTime GioKetThuc { get; set; }
-        public string TrangThai { get; set; } = "ChoXacNhan";
+        public int SoLuongNguoi { get; set; }
+        public string TrangThai { get; set; } = "ChoXacNhan"; // ChoXacNhan, DaXacNhan, DaHuy, DangSuDung, HoanTat
 
         // Navigation properties
-        [ForeignKey("PhongID")]
-        public virtual Phong Phong { get; set; } = null!;
-        
-        [ForeignKey("KhachHangID")]
         public virtual KhachHang KhachHang { get; set; } = null!;
-        
-        public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>();
+        public virtual Phong Phong { get; set; } = null!;
+        public virtual ICollection<HoaDon> HoaDons { get; set; } = new List<HoaDon>(); // Thêm dòng này
     }
 }

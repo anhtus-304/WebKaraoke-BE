@@ -7,8 +7,10 @@ namespace WebKaraoke.Data
     {
         public WebKaraokeDbContext(DbContextOptions<WebKaraokeDbContext> options) : base(options) { }
 
-        // DbSets
+        // DbSets - THÊM DÒNG NÀY
         public DbSet<LoaiPhong> LoaiPhongs => Set<LoaiPhong>();
+
+        // Các DbSets hiện có
         public DbSet<KhachHang> KhachHangs => Set<KhachHang>();
         public DbSet<Phong> Phongs => Set<Phong>();
         public DbSet<DatPhong> DatPhongs => Set<DatPhong>();
@@ -25,9 +27,9 @@ namespace WebKaraoke.Data
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<KhachHang>()
-        .ToTable(tb => tb.UseSqlOutputClause(false));
+                .ToTable(tb => tb.UseSqlOutputClause(false));
 
-            // Configure LoaiPhong
+            // THÊM CONFIGURATION CHO LoaiPhong
             modelBuilder.Entity<LoaiPhong>(entity =>
             {
                 entity.HasKey(e => e.LoaiPhongID);
@@ -38,21 +40,20 @@ namespace WebKaraoke.Data
                 entity.HasIndex(e => e.TenLoai).IsUnique();
             });
 
-            // Configure Phong
+            // SỬA LẠI Configure Phong - THÊM QUAN HỆ VỚI LoaiPhong
             modelBuilder.Entity<Phong>(entity =>
             {
                 entity.HasKey(e => e.PhongID);
                 entity.Property(e => e.TenPhong).HasMaxLength(100).IsRequired();
-                entity.Property(e => e.GiaGio).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.TrangThai).HasMaxLength(20).IsRequired();
                 
-                entity.HasIndex(e => e.TenPhong).IsUnique();
-
-                // Relationship với LoaiPhong
+                // Quan hệ với LoaiPhong
                 entity.HasOne(e => e.LoaiPhong)
-                    .WithMany(lp => lp.Phongs)
+                    .WithMany(l => l.Phongs)
                     .HasForeignKey(e => e.LoaiPhongID)
                     .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasIndex(e => e.TenPhong).IsUnique();
             });
 
             // Configure KhachHang
@@ -208,24 +209,36 @@ namespace WebKaraoke.Data
 
             // Seed data
             SeedData(modelBuilder);
-
         }
 
         private void SeedData(ModelBuilder modelBuilder)
         {
-            // Seed LoaiPhong
+            // THÊM SEED DATA CHO LoaiPhong TRƯỚC
             modelBuilder.Entity<LoaiPhong>().HasData(
-                new LoaiPhong { LoaiPhongID = 1, TenLoai = "VIP", GiaPhong = 150000, SucChua = 10, MoTa = "Phòng VIP cao cấp" },
-                new LoaiPhong { LoaiPhongID = 2, TenLoai = "Thường", GiaPhong = 100000, SucChua = 6, MoTa = "Phòng thường" },
-                new LoaiPhong { LoaiPhongID = 3, TenLoai = "Family", GiaPhong = 200000, SucChua = 15, MoTa = "Phòng gia đình" }
+                new LoaiPhong 
+                { 
+                    LoaiPhongID = 1, 
+                    TenLoai = "VIP", 
+                    GiaPhong = 150000, 
+                    SucChua = 10, 
+                    MoTa = "Phòng VIP cao cấp" 
+                },
+                new LoaiPhong 
+                { 
+                    LoaiPhongID = 2, 
+                    TenLoai = "Thuong", 
+                    GiaPhong = 100000, 
+                    SucChua = 6, 
+                    MoTa = "Phòng thường" 
+                }
             );
 
-            // Seed Phongs
+            // SỬA LẠI Seed Phongs - SỬ DỤNG LoaiPhongID THAY VÌ LoaiPhong string
             modelBuilder.Entity<Phong>().HasData(
-                new Phong { PhongID = 1, TenPhong = "P001", LoaiPhongID = 1, GiaGio = 150000, TrangThai = "Trong" },
-                new Phong { PhongID = 2, TenPhong = "P002", LoaiPhongID = 1, GiaGio = 150000, TrangThai = "Trong" },
-                new Phong { PhongID = 3, TenPhong = "P003", LoaiPhongID = 2, GiaGio = 100000, TrangThai = "Trong" },
-                new Phong { PhongID = 4, TenPhong = "P004", LoaiPhongID = 2, GiaGio = 100000, TrangThai = "Trong" }
+                new Phong { PhongID = 1, TenPhong = "P001", LoaiPhongID = 1, TrangThai = "Trong" },
+                new Phong { PhongID = 2, TenPhong = "P002", LoaiPhongID = 1, TrangThai = "Trong" },
+                new Phong { PhongID = 3, TenPhong = "P003", LoaiPhongID = 2, TrangThai = "Trong" },
+                new Phong { PhongID = 4, TenPhong = "P004", LoaiPhongID = 2, TrangThai = "Trong" }
             );
 
             // Seed NhanVien

@@ -4,6 +4,7 @@ using WebKaraoke.Data;
 using WebKaraoke.Data.Entities;
 using WebKaraoke.Business.Interfaces;
 using WebKaraoke.DTO;
+using WebKaraoke.Business.Helpers;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace WebKaraoke.Business.Services
         private readonly IRepository<KhachHang> _khachHangRepository;
         private readonly IRepository<NhanVien> _nhanVienRepository;
         private readonly IRepository<DiemThanhVien> _diemThanhVienRepository;
+        private readonly JwtHelper _jwtHelper;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
 
@@ -24,6 +26,7 @@ namespace WebKaraoke.Business.Services
             IRepository<KhachHang> khachHangRepository,
             IRepository<NhanVien> nhanVienRepository,
             IRepository<DiemThanhVien> diemThanhVienRepository,
+            JwtHelper jwtHelper,
             IMapper mapper,
             ILogger<AuthService> logger)
         {
@@ -31,6 +34,7 @@ namespace WebKaraoke.Business.Services
             _khachHangRepository = khachHangRepository;
             _nhanVienRepository = nhanVienRepository;
             _diemThanhVienRepository = diemThanhVienRepository;
+            _jwtHelper = jwtHelper;
             _mapper = mapper;
             _logger = logger;
         }
@@ -41,6 +45,7 @@ namespace WebKaraoke.Business.Services
             {
                 _logger.LogInformation("Attempting login for username: {Username}", request.Username);
 
+                // Tìm tài khoản theo Username
                 var taiKhoan = (await _taiKhoanRepository.GetAllAsync())
                     .FirstOrDefault(tk => tk.Username == request.Username);
 
@@ -56,34 +61,41 @@ namespace WebKaraoke.Business.Services
                     return null;
                 }
 
+                // Lấy thông tin họ tên theo role
                 string hoTen = await GetHoTenByRoleAsync(taiKhoan);
+
+                // Tạo token JWT
+                var token = _jwtHelper.GenerateToken(
+                    taiKhoan.Username,
+                    taiKhoan.Role,
+                    taiKhoan.TaiKhoanID,
+                    hoTen);
 
                 _logger.LogInformation("Login successful for user: {Username}", request.Username);
 
-                // Trả về LoginResponse với các properties cơ bản
-                return new LoginResponse 
-                { 
-                    UserId = taiKhoan.TaiKhoanID,
-                    Username = taiKhoan.Username,
+                return new LoginResponse
+                {
+                    Token = token,
                     Role = taiKhoan.Role,
-                    HoTen = hoTen
-                    // Token có thể không cần hoặc để null
+                    HoTen = hoTen,
+                    UserId = taiKhoan.TaiKhoanID,
+                    Username = taiKhoan.Username
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during login for user: {Username}", request.Username);
-                return null;
+                throw;
             }
         }
 
-        // GIỮ NGUYÊN CÁC PHƯƠNG THỨC KHÁC
         public async Task<bool> RegisterAsync(RegisterRequest request)
         {
             try
             {
                 _logger.LogInformation("Attempting registration for username: {Username}", request.Username);
 
+                // Kiểm tra username đã tồn tại
                 var existingTaiKhoan = (await _taiKhoanRepository.GetAllAsync())
                     .FirstOrDefault(tk => tk.Username == request.Username);
 
@@ -93,6 +105,7 @@ namespace WebKaraoke.Business.Services
                     return false;
                 }
 
+                // Tạo khách hàng mới
                 var khachHang = new KhachHang
                 {
                     HoTen = request.Hoten ?? string.Empty,
@@ -103,6 +116,7 @@ namespace WebKaraoke.Business.Services
                 await _khachHangRepository.AddAsync(khachHang);
                 await _khachHangRepository.SaveAsync();
 
+                // Tạo tài khoản
                 var taiKhoan = new TaiKhoan
                 {
                     Username = request.Username,
@@ -114,6 +128,7 @@ namespace WebKaraoke.Business.Services
                 await _taiKhoanRepository.AddAsync(taiKhoan);
                 await _taiKhoanRepository.SaveAsync();
 
+                // Tạo điểm thành viên
                 var diemThanhVien = new DiemThanhVien
                 {
                     KhachHangID = khachHang.KhachHangID,

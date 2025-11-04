@@ -1,6 +1,7 @@
 using AutoMapper;
 using WebKaraoke.Data.Entities;
 using WebKaraoke.DTO;
+using WebKaraoke.Business.Mapping;
 
 namespace WebKaraoke.Business.Mapping
 {
@@ -8,26 +9,36 @@ namespace WebKaraoke.Business.Mapping
     {
         public AutoMapperProfile()
         {
-            CreateMap<Phong, PhongDTO>();
+            // Phong mappings - ĐÃ SỬA
+            CreateMap<Phong, PhongDTO>()
+                .ForMember(dest => dest.TenLoaiPhong, opt => opt.MapFrom(src => src.LoaiPhong.TenLoai))
+                .ForMember(dest => dest.GiaGio, opt => opt.MapFrom(src => src.LoaiPhong.GiaPhong))
+                .ForMember(dest => dest.SucChua, opt => opt.MapFrom(src => src.LoaiPhong.SucChua));
+                
+            CreateMap<PhongCreateDTO, Phong>();
+            CreateMap<PhongUpdateDTO, Phong>();
+
+            // KhachHang mappings
             CreateMap<KhachHang, KhachHangDTO>();
             CreateMap<KhachHangCreateDTO, KhachHang>();
             CreateMap<KhachHangUpdateDTO, KhachHang>();
 
-            // DatPhong mappings
+            // DatPhong mappings - ĐÃ SỬA
             CreateMap<DatPhong, DatPhongDTO>()
                 .ForMember(dest => dest.TenPhong, opt => opt.MapFrom(src => src.Phong.TenPhong))
                 .ForMember(dest => dest.TenKhachHang, opt => opt.MapFrom(src => src.KhachHang.HoTen))
-                .ForMember(dest => dest.LoaiPhong, opt => opt.MapFrom(src => src.Phong.LoaiPhong.TenLoai))
-                .ForMember(dest => dest.GiaGio, opt => opt.MapFrom(src => src.Phong.GiaGio));
+                .ForMember(dest => dest.LoaiPhong, opt => opt.MapFrom(src => src.Phong.LoaiPhong.TenLoai)) // SỬA: Lấy TenLoai
+                .ForMember(dest => dest.GiaGio, opt => opt.MapFrom(src => src.Phong.LoaiPhong.GiaPhong)); // SỬA: Lấy từ LoaiPhong.GiaPhong
 
             CreateMap<DatPhongRequest, DatPhong>();
             CreateMap<DatPhongUpdateDTO, DatPhong>();
 
+            // MonAnNuocUong mappings
             CreateMap<MonAnNuocUong, MonAnNuocUongDTO>();
             CreateMap<MonAnNuocUongCreateDTO, MonAnNuocUong>();
             CreateMap<MonAnNuocUongUpdateDTO, MonAnNuocUong>();
 
-             
+            // HoaDon mappings
             CreateMap<HoaDon, HoaDonDTO>()
                 .ForMember(dest => dest.TenNhanVien, opt => opt.MapFrom(src => src.NhanVien.HoTen))
                 .ForMember(dest => dest.MaKhuyenMai, opt => opt.MapFrom(src => src.KhuyenMai != null ? src.KhuyenMai.MaKM : ""))
@@ -40,8 +51,7 @@ namespace WebKaraoke.Business.Mapping
             // ChiTietHoaDon mappings
             CreateMap<ChiTietHoaDon, ChiTietHoaDonDTO>()
                 .ForMember(dest => dest.TenMon, opt => opt.MapFrom(src => src.MonAnNuocUong.TenMon))
-                .ForMember(dest => dest.DanhMuc, opt => opt.MapFrom(src => src.MonAnNuocUong.DanhMuc))
-                .ForMember(dest => dest.ThanhTien, opt => opt.MapFrom(src => src.DonGia * src.SoLuong));
+                .ForMember(dest => dest.DanhMuc, opt => opt.MapFrom(src => src.MonAnNuocUong.DanhMuc));
 
             // NhanVien mappings
             CreateMap<NhanVien, NhanVienDTO>();
@@ -61,10 +71,8 @@ namespace WebKaraoke.Business.Mapping
             // LichSuDiem mappings
             CreateMap<LichSuDiem, LichSuDiemDTO>();
 
-            // LoaiPhong mappings
-            CreateMap<LoaiPhong, LoaiPhongDTO>()
-                .ForMember(dest => dest.SoLuongPhong, opt => opt.MapFrom(src => src.Phongs.Count));
-
+            // LoaiPhong mappings - THÊM MAPPING CHO LoaiPhong
+            CreateMap<LoaiPhong, LoaiPhongDTO>();
             CreateMap<LoaiPhongCreateDTO, LoaiPhong>();
             CreateMap<LoaiPhongUpdateDTO, LoaiPhong>();
         }
